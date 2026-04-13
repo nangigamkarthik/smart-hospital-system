@@ -1,0 +1,63 @@
+# ⚡ QUICK SETUP - 3 Commands
+
+## Extract → Install → Run
+
+### 1. Extract this zip to your project:
+```
+smart-hospital-system/
+├── backend/    (already running ✓)
+└── frontend/   (replace with this)
+```
+
+### 2. Install dependencies:
+```bash
+cd frontend
+npm install
+```
+
+### 3. Start the server:
+```bash
+npm run dev
+```
+
+## ✅ Open http://localhost:3000
+
+**Login:** admin / admin123
+
+---
+
+## 🎯 What You Get:
+
+✅ All 7 pages working (Dashboard, Patients, Doctors, Appointments, Departments, Medical Records, Analytics)
+✅ Full CRUD on Patients, Doctors, Departments
+✅ View/Edit/Delete modals
+✅ Charts and analytics
+✅ Search, filters, pagination
+✅ Connected to your backend on port 5000
+
+---
+
+## 🔧 If Port 3000 is Busy:
+
+Edit `vite.config.js` line 6:
+```javascript
+port: 3001,  // Change to any port
+```
+
+---
+
+## 🆘 Issues?
+
+**npm install fails?**
+```bash
+npm cache clean --force
+npm install
+```
+
+**Can't connect to backend?**
+- Make sure backend is running on port 5000
+- Check vite.config.js proxy settings
+
+---
+
+**See README.md for full documentation!**
