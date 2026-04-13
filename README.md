@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # 🏥 Smart Hospital Management System
 
 A comprehensive hospital management system with analytics dashboard and machine learning capabilities built with Flask (Backend) and React (Frontend).
@@ -283,3 +284,7 @@ For issues or questions, please create an issue in the repository.
 ---
 
 **Happy Coding! 🚀**
+=======
+# smart-hospital-system
+ok
+>>>>>>> a77d01b9c028aea691a2e37a989ad226f7c6036a
