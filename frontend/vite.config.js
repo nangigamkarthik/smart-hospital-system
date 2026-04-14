@@ -12,7 +12,5 @@ export default defineConfig({
       },
     },
   },
-  css: {
-    postcss: null,  // Disable PostCSS
-  },
+  
 })
