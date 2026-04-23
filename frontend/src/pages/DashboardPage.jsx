@@ -105,10 +105,6 @@ const DashboardPage = () => {
     }
   };
 
-  if (loading) {
-    return <Loading fullScreen />;
-  }
-
   const roleContent = useMemo(() => {
     if (user?.role === 'Admin') {
       return {
@@ -183,6 +179,10 @@ const DashboardPage = () => {
       },
     };
   }, [user?.role]);
+
+  if (loading) {
+    return <Loading fullScreen />;
+  }
 
   const statCards = [
     {

@@ -82,14 +82,16 @@ const Sidebar = ({ isOpen, onClose }) => {
           </div>
         </div>
 
-        <button
-          className="icon-button app-sidebar__close"
-          onClick={onClose}
-          type="button"
-          aria-label="Close navigation"
-        >
-          <X size={16} />
-        </button>
+        {isOpen ? (
+          <button
+            className="icon-button app-sidebar__close"
+            onClick={onClose}
+            type="button"
+            aria-label="Close navigation"
+          >
+            <X size={16} />
+          </button>
+        ) : null}
       </div>
 
       <div className="app-sidebar__status-card">
@@ -121,6 +123,7 @@ const Sidebar = ({ isOpen, onClose }) => {
                   key={item.path}
                   to={item.path}
                   end={item.path === '/'}
+                  onClick={onClose}
                   className={({ isActive }) => `app-sidebar__link ${isActive ? 'is-active' : ''}`}
                 >
                   <div className="app-sidebar__link-icon">
