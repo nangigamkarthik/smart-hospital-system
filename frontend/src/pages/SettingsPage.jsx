@@ -1,19 +1,22 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Settings as SettingsIcon, User, Lock, Bell, Database, Mail, Shield, Save, Eye, EyeOff } from 'lucide-react';
 import { authAPI } from '../services/api';
 import toast from 'react-hot-toast';
+import { useAuth } from '../services/AuthContext';
+import { canAccessSettingsTab } from '../utils/permissions';
 
 const SettingsPage = () => {
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('profile');
   const [showOldPassword, setShowOldPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
 
   // Profile Settings
   const [profileData, setProfileData] = useState({
-    full_name: 'Admin User',
-    email: 'admin@hospital.com',
-    phone: '+1 234 567 8900',
-    department: 'Administration',
+    full_name: user?.full_name || user?.username || 'Hospital User',
+    email: user?.email || 'user@hospital.com',
+    phone: user?.phone || '+1 234 567 8900',
+    department: user?.role || 'General',
   });
 
   // Password Change
@@ -96,6 +99,11 @@ const SettingsPage = () => {
     { id: 'system', name: 'System', icon: Database },
   ];
 
+  const visibleTabs = useMemo(
+    () => tabs.filter((tab) => canAccessSettingsTab(user?.role, tab.id)),
+    [tabs, user?.role]
+  );
+
   return (
     <div className="p-6 space-y-6 bg-gradient-to-br from-gray-50 to-purple-50 min-h-screen">
       {/* Header */}
@@ -114,7 +122,7 @@ const SettingsPage = () => {
         <div className="lg:col-span-1">
           <div className="bg-white rounded-xl shadow-lg p-4">
             <nav className="space-y-2">
-              {tabs.map((tab) => {
+              {visibleTabs.map((tab) => {
                 const Icon = tab.icon;
                 return (
                   <button
@@ -153,6 +161,7 @@ const SettingsPage = () => {
                   <div>
                     <h3 className="text-xl font-bold text-gray-900">{profileData.full_name}</h3>
                     <p className="text-gray-600">{profileData.email}</p>
+                    <p className="text-sm text-indigo-600 font-semibold mt-1">{user?.role || 'Staff User'}</p>
                     <button type="button" className="mt-2 text-sm text-indigo-600 hover:text-indigo-700 font-semibold">
                       Change Profile Picture
                     </button>

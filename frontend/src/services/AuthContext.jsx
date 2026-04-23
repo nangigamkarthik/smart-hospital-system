@@ -18,8 +18,15 @@ export const AuthProvider = ({ children }) => {
     setLoading(false);
   }, []);
 
-  const login = async (credentials) => {
+  const login = async (credentialsOrUsername, password) => {
     try {
+      const credentials = typeof credentialsOrUsername === 'object'
+        ? credentialsOrUsername
+        : {
+            username: credentialsOrUsername,
+            password,
+          };
+
       const response = await authAPI.login(credentials);
       const { access_token, user: userData } = response.data;
       

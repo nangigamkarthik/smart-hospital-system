@@ -6,6 +6,12 @@ import AddPatientModal from '../components/patients/AddPatientModal';
 import ViewPatientModal from '../components/patients/ViewPatientModal';
 import toast from 'react-hot-toast';
 
+const statusColors = {
+  Active:   { bg: '#d1fae5', color: '#065f46' },
+  Inactive: { bg: '#f3f4f6', color: '#374151' },
+  Deceased: { bg: '#fee2e2', color: '#991b1b' },
+};
+
 const PatientsPage = () => {
   const [patients, setPatients] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -18,143 +24,59 @@ const PatientsPage = () => {
   const [editingPatient, setEditingPatient] = useState(null);
   const [viewingPatient, setViewingPatient] = useState(null);
 
-  useEffect(() => {
-    fetchPatients();
-  }, [currentPage, search, filterStatus]);
+  useEffect(() => { fetchPatients(); }, [currentPage, search, filterStatus]);
 
   const fetchPatients = async () => {
     try {
       setLoading(true);
-      const response = await patientAPI.getAll({
-        page: currentPage,
-        per_page: 10,
-        search: search,
-        status: filterStatus,
-      });
-      
+      const response = await patientAPI.getAll({ page: currentPage, per_page: 10, search, status: filterStatus });
       setPatients(response.data.patients);
       setTotalPages(response.data.pages);
     } catch (error) {
-      console.error('Error fetching patients:', error);
       toast.error('Failed to load patients');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleSearch = (e) => {
-    setSearch(e.target.value);
-    setCurrentPage(1);
-  };
-
   const handleDelete = async (id) => {
-    if (!window.confirm('Are you sure you want to delete this patient?')) {
-      return;
-    }
-
+    if (!window.confirm('Delete this patient?')) return;
     try {
       await patientAPI.delete(id);
-      toast.success('Patient deleted successfully');
+      toast.success('Patient deleted');
       fetchPatients();
-    } catch (error) {
-      console.error('Error deleting patient:', error);
-      toast.error('Failed to delete patient');
-    }
+    } catch { toast.error('Failed to delete patient'); }
   };
 
-  const handleAddPatient = async (patientData) => {
-    await patientAPI.create(patientData);
-    fetchPatients();
-  };
-
-  const handleEditPatient = async (patientData) => {
-    await patientAPI.update(editingPatient.id, patientData);
-    fetchPatients();
-  };
-
-  const openAddModal = () => {
-    setEditingPatient(null);
-    setIsModalOpen(true);
-  };
-
-  const openEditModal = (patient) => {
-    setEditingPatient(patient);
-    setIsModalOpen(true);
-  };
-
-  const closeModal = () => {
-    setIsModalOpen(false);
-    setEditingPatient(null);
-  };
-
-  const openViewModal = (patient) => {
-    setViewingPatient(patient);
-    setIsViewModalOpen(true);
-  };
-
-  const closeViewModal = () => {
-    setIsViewModalOpen(false);
-    setViewingPatient(null);
-  };
-
-  const getStatusBadge = (status) => {
-    const styles = {
-      Active: 'bg-green-100 text-green-800',
-      Inactive: 'bg-gray-100 text-gray-800',
-      Deceased: 'bg-red-100 text-red-800',
-    };
-    
-    return (
-      <span className={`px-2 py-1 text-xs font-semibold rounded-full ${styles[status]}`}>
-        {status}
-      </span>
-    );
-  };
-
-  if (loading && patients.length === 0) {
-    return <Loading fullScreen />;
-  }
+  if (loading && patients.length === 0) return <Loading fullScreen />;
 
   return (
-    <div className="p-6 space-y-6">
+    <div style={s.page}>
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div style={s.header}>
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Patients</h1>
-          <p className="text-gray-600 mt-1">Manage patient records and information</p>
+          <h1 style={s.h1}>Patients</h1>
+          <p style={s.sub}>Manage patient records and information</p>
         </div>
-        <button onClick={openAddModal} className="btn-primary flex items-center space-x-2">
-          <Plus className="h-5 w-5" />
-          <span>Add Patient</span>
+        <button style={s.btnPrimary} onClick={() => { setEditingPatient(null); setIsModalOpen(true); }}>
+          <Plus size={18} /> Add Patient
         </button>
       </div>
 
       {/* Filters */}
-      <div className="card">
-        <div className="flex flex-col md:flex-row gap-4">
-          {/* Search */}
-          <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+      <div style={s.card}>
+        <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+          <div style={{ flex: 1, minWidth: 200, position: 'relative' }}>
+            <Search size={18} color="#9ca3af" style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)' }} />
             <input
-              type="text"
-              placeholder="Search by name, ID, phone, or email..."
-              value={search}
-              onChange={handleSearch}
-              className="input-field pl-10"
+              type="text" placeholder="Search by name, ID, phone..." value={search}
+              onChange={e => { setSearch(e.target.value); setCurrentPage(1); }}
+              style={{ ...s.input, paddingLeft: '2.5rem' }}
             />
           </div>
-
-          {/* Status Filter */}
-          <div className="flex items-center space-x-2">
-            <Filter className="h-5 w-5 text-gray-400" />
-            <select
-              value={filterStatus}
-              onChange={(e) => {
-                setFilterStatus(e.target.value);
-                setCurrentPage(1);
-              }}
-              className="input-field"
-            >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <Filter size={16} color="#9ca3af" />
+            <select value={filterStatus} onChange={e => { setFilterStatus(e.target.value); setCurrentPage(1); }} style={s.input}>
               <option value="">All Status</option>
               <option value="Active">Active</option>
               <option value="Inactive">Inactive</option>
@@ -164,84 +86,41 @@ const PatientsPage = () => {
         </div>
       </div>
 
-      {/* Patients Table */}
-      <div className="card overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Patient ID
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Name
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Gender
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Blood Group
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Phone
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Status
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Actions
-                </th>
+      {/* Table */}
+      <div style={{ ...s.card, padding: 0, overflow: 'hidden' }}>
+        <div style={{ overflowX: 'auto' }}>
+          <table style={s.table}>
+            <thead>
+              <tr style={{ background: 'linear-gradient(135deg, #14b8a6 0%, #06b6d4 100%)' }}>
+                {['Patient ID','Name','Gender','Blood Group','Phone','Status','Actions'].map(h => (
+                  <th key={h} style={s.th}>{h}</th>
+                ))}
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {patients.map((patient) => (
-                <tr key={patient.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                    {patient.patient_id}
+            <tbody>
+              {patients.map((p, i) => (
+                <tr key={p.id} style={{ background: i % 2 === 0 ? 'white' : '#f9fafb' }}
+                  onMouseOver={e => e.currentTarget.style.background = '#f0fdfa'}
+                  onMouseOut={e => e.currentTarget.style.background = i % 2 === 0 ? 'white' : '#f9fafb'}
+                >
+                  <td style={s.td}><span style={s.pid}>{p.patient_id}</span></td>
+                  <td style={s.td}>
+                    <div style={{ fontWeight: 600, color: '#111827', fontSize: '0.875rem' }}>{p.full_name}</div>
+                    <div style={{ fontSize: '0.75rem', color: '#6b7280' }}>{p.email}</div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div>
-                      <div className="text-sm font-medium text-gray-900">
-                        {patient.full_name}
-                      </div>
-                      <div className="text-sm text-gray-500">{patient.email}</div>
-                    </div>
+                  <td style={s.td}><span style={{ fontSize: '0.875rem', color: '#374151' }}>{p.gender}</span></td>
+                  <td style={s.td}><span style={{ fontSize: '0.875rem', color: '#374151' }}>{p.blood_group || 'N/A'}</span></td>
+                  <td style={s.td}><span style={{ fontSize: '0.875rem', color: '#374151' }}>{p.phone}</span></td>
+                  <td style={s.td}>
+                    <span style={{ ...s.badge, background: statusColors[p.status]?.bg || '#f3f4f6', color: statusColors[p.status]?.color || '#374151' }}>
+                      {p.status}
+                    </span>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {patient.gender}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {patient.blood_group || 'N/A'}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {patient.phone}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    {getStatusBadge(patient.status)}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    <div className="flex items-center space-x-3">
-                      <button
-                        onClick={() => openViewModal(patient)}
-                        className="text-primary-600 hover:text-primary-900 transition-colors"
-                        title="View Details"
-                      >
-                        <Eye className="h-5 w-5" />
-                      </button>
-                      <button
-                        onClick={() => openEditModal(patient)}
-                        className="text-green-600 hover:text-green-900 transition-colors"
-                        title="Edit"
-                      >
-                        <Edit className="h-5 w-5" />
-                      </button>
-                      <button
-                        onClick={() => handleDelete(patient.id)}
-                        className="text-red-600 hover:text-red-900 transition-colors"
-                        title="Delete"
-                      >
-                        <Trash2 className="h-5 w-5" />
-                      </button>
+                  <td style={s.td}>
+                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                      <button style={s.actionIcon} title="View" onClick={() => { setViewingPatient(p); setIsViewModalOpen(true); }}><Eye size={17} color="#0891b2" /></button>
+                      <button style={s.actionIcon} title="Edit" onClick={() => { setEditingPatient(p); setIsModalOpen(true); }}><Edit size={17} color="#10b981" /></button>
+                      <button style={s.actionIcon} title="Delete" onClick={() => handleDelete(p.id)}><Trash2 size={17} color="#ef4444" /></button>
                     </div>
                   </td>
                 </tr>
@@ -251,52 +130,44 @@ const PatientsPage = () => {
         </div>
 
         {/* Pagination */}
-        <div className="bg-gray-50 px-6 py-4 flex items-center justify-between border-t border-gray-200">
-          <div className="text-sm text-gray-700">
-            Page <span className="font-medium">{currentPage}</span> of{' '}
-            <span className="font-medium">{totalPages}</span>
-          </div>
-          <div className="flex space-x-2">
-            <button
-              onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-              disabled={currentPage === 1}
-              className="btn-secondary disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              Previous
-            </button>
-            <button
-              onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
-              disabled={currentPage === totalPages}
-              className="btn-secondary disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              Next
-            </button>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem 1.5rem', borderTop: '1px solid #e5e7eb', background: '#f9fafb' }}>
+          <span style={{ fontSize: '0.875rem', color: '#6b7280' }}>Page <b>{currentPage}</b> of <b>{totalPages}</b></span>
+          <div style={{ display: 'flex', gap: '0.5rem' }}>
+            <button style={s.btnSecondary} disabled={currentPage === 1} onClick={() => setCurrentPage(p => Math.max(1, p - 1))}>Previous</button>
+            <button style={s.btnSecondary} disabled={currentPage === totalPages} onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}>Next</button>
           </div>
         </div>
       </div>
 
       {patients.length === 0 && !loading && (
-        <div className="card text-center py-12">
-          <p className="text-gray-500">No patients found</p>
+        <div style={{ ...s.card, textAlign: 'center', padding: '3rem' }}>
+          <p style={{ color: '#9ca3af', fontSize: '1rem' }}>No patients found</p>
         </div>
       )}
 
-      {/* Add/Edit Patient Modal */}
-      <AddPatientModal
-        isOpen={isModalOpen}
-        onClose={closeModal}
-        onSuccess={editingPatient ? handleEditPatient : handleAddPatient}
-        editPatient={editingPatient}
-      />
-
-      {/* View Patient Modal */}
-      <ViewPatientModal
-        isOpen={isViewModalOpen}
-        onClose={closeViewModal}
-        patient={viewingPatient}
-      />
+      <AddPatientModal isOpen={isModalOpen} onClose={() => { setIsModalOpen(false); setEditingPatient(null); }}
+        onSuccess={editingPatient ? async d => { await patientAPI.update(editingPatient.id, d); fetchPatients(); } : async d => { await patientAPI.create(d); fetchPatients(); }}
+        editPatient={editingPatient} />
+      <ViewPatientModal isOpen={isViewModalOpen} onClose={() => { setIsViewModalOpen(false); setViewingPatient(null); }} patient={viewingPatient} />
     </div>
   );
+};
+
+const s = {
+  page: { padding: '1.75rem', display: 'flex', flexDirection: 'column', gap: '1.5rem', minHeight: '100%' },
+  header: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' },
+  h1: { fontSize: '1.875rem', fontWeight: 800, color: '#111827', margin: 0 },
+  sub: { fontSize: '0.875rem', color: '#6b7280', marginTop: 4 },
+  card: { background: 'white', borderRadius: '1rem', padding: '1.5rem', boxShadow: '0 4px 20px rgba(0,0,0,0.07)', border: '1px solid #e5e7eb' },
+  btnPrimary: { display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.75rem 1.5rem', background: 'linear-gradient(135deg, #14b8a6 0%, #06b6d4 100%)', color: 'white', fontWeight: 700, fontSize: '0.875rem', borderRadius: '0.75rem', border: 'none', cursor: 'pointer', boxShadow: '0 4px 12px rgba(20,184,166,0.35)' },
+  btnSecondary: { padding: '0.5rem 1rem', background: 'white', color: '#374151', fontWeight: 600, fontSize: '0.875rem', borderRadius: '0.625rem', border: '1.5px solid #e5e7eb', cursor: 'pointer' },
+  input: { padding: '0.75rem 1rem', border: '1.5px solid #e5e7eb', borderRadius: '0.625rem', fontSize: '0.875rem', outline: 'none', width: '100%', background: 'white', color: '#111827' },
+  table: { width: '100%', borderCollapse: 'collapse' },
+  th: { padding: '0.875rem 1.25rem', textAlign: 'left', fontSize: '0.75rem', fontWeight: 700, color: 'white', textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap' },
+  td: { padding: '0.875rem 1.25rem', borderBottom: '1px solid #f3f4f6', verticalAlign: 'middle' },
+  badge: { display: 'inline-flex', padding: '0.25rem 0.75rem', borderRadius: '9999px', fontSize: '0.75rem', fontWeight: 700 },
+  pid: { fontSize: '0.8rem', fontWeight: 700, color: '#0891b2', background: '#e0f2fe', padding: '0.2rem 0.5rem', borderRadius: '0.375rem' },
+  actionIcon: { background: 'none', border: 'none', cursor: 'pointer', padding: '0.25rem', borderRadius: '0.375rem' },
 };
 
 export default PatientsPage;

@@ -1,123 +1,129 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { 
-  UserPlus, 
-  Calendar, 
-  FileText, 
-  Users, 
-  Stethoscope, 
-  Building2,
+import {
   Brain,
+  Building2,
+  Calendar,
   Download,
-  Settings
+  FileText,
+  Pill,
+  Plus,
+  Settings,
+  Stethoscope,
+  Users,
 } from 'lucide-react';
+import { useAuth } from '../../services/AuthContext';
+import { canAccessAction } from '../../utils/permissions';
+
+const actions = [
+  {
+    id: 'patient-intake',
+    title: 'New patient intake',
+    description: 'Capture registration details and send them into triage.',
+    icon: Plus,
+    path: '/patients',
+  },
+  {
+    id: 'doctor-roster',
+    title: 'Review doctor roster',
+    description: 'Check availability before the next appointment rush.',
+    icon: Stethoscope,
+    path: '/doctors',
+  },
+  {
+    id: 'schedule',
+    title: 'Open scheduler',
+    description: 'Adjust bookings, reminder flow, and queue balance.',
+    icon: Calendar,
+    path: '/appointments',
+  },
+  {
+    id: 'records',
+    title: 'Medical records',
+    description: 'Open clinical notes, summaries, and current history.',
+    icon: FileText,
+    path: '/records',
+  },
+  {
+    id: 'departments',
+    title: 'Department capacity',
+    description: 'See where bed load and staffing pressure are rising.',
+    icon: Building2,
+    path: '/departments',
+  },
+  {
+    id: 'patients',
+    title: 'Patient directory',
+    description: 'Search existing patients and follow their current status.',
+    icon: Users,
+    path: '/patients',
+  },
+  {
+    id: 'predictions',
+    title: 'Predictive insights',
+    description: 'Run the smart forecast view for care and queue risk.',
+    icon: Brain,
+    path: '/ml-predictions',
+  },
+  {
+    id: 'medicines',
+    title: 'Medicine lookup',
+    description: 'Check official usage, side effects, and age guidance quickly.',
+    icon: Pill,
+    path: '/medicines',
+  },
+  {
+    id: 'reports',
+    title: 'Generate reports',
+    description: 'Export a fresh summary for leadership or daily standup.',
+    icon: Download,
+    path: '/reports',
+  },
+];
 
 const QuickActions = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
 
-  const actions = [
-    {
-      id: 'add-patient',
-      title: 'Add Patient',
-      description: 'Register new patient',
-      icon: UserPlus,
-      color: 'from-blue-500 to-cyan-600',
-      action: () => navigate('/patients'),
-    },
-    {
-      id: 'book-appointment',
-      title: 'Book Appointment',
-      description: 'Schedule new appointment',
-      icon: Calendar,
-      color: 'from-purple-500 to-pink-600',
-      action: () => navigate('/appointments'),
-    },
-    {
-      id: 'add-record',
-      title: 'Medical Record',
-      description: 'Create medical record',
-      icon: FileText,
-      color: 'from-green-500 to-emerald-600',
-      action: () => navigate('/records'),
-    },
-    {
-      id: 'view-patients',
-      title: 'View Patients',
-      description: 'Browse all patients',
-      icon: Users,
-      color: 'from-orange-500 to-red-600',
-      action: () => navigate('/patients'),
-    },
-    {
-      id: 'add-doctor',
-      title: 'Add Doctor',
-      description: 'Register new doctor',
-      icon: Stethoscope,
-      color: 'from-indigo-500 to-purple-600',
-      action: () => navigate('/doctors'),
-    },
-    {
-      id: 'manage-departments',
-      title: 'Departments',
-      description: 'Manage departments',
-      icon: Building2,
-      color: 'from-pink-500 to-rose-600',
-      action: () => navigate('/departments'),
-    },
-    {
-      id: 'ml-predictions',
-      title: 'ML Predictions',
-      description: 'AI health insights',
-      icon: Brain,
-      color: 'from-violet-500 to-purple-600',
-      action: () => navigate('/ml-predictions'),
-    },
-    {
-      id: 'reports',
-      title: 'Generate Report',
-      description: 'Export analytics',
-      icon: Download,
-      color: 'from-teal-500 to-cyan-600',
-      action: () => navigate('/reports'),
-    },
-  ];
+  const visibleActions = actions.filter((action) => canAccessAction(user?.role, action.id));
 
   return (
-    <div className="bg-white rounded-xl shadow-lg p-6">
-      <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center">
-        <Settings className="h-6 w-6 mr-2 text-indigo-600" />
-        Quick Actions
-      </h3>
-      
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        {actions.map((action) => {
+    <article className="section-card">
+      <div className="section-heading">
+        <div>
+          <div className="section-heading__eyebrow">Fast lane</div>
+          <h3 className="section-heading__title">Quick actions</h3>
+        </div>
+        <div className="shell-chip shell-chip--soft">
+          <Settings size={14} />
+          <span>Role-based shortcuts</span>
+        </div>
+      </div>
+
+      <div className="action-grid">
+        {visibleActions.map((action) => {
           const Icon = action.icon;
+
           return (
             <button
+              className="action-tile"
               key={action.id}
-              onClick={action.action}
-              className="group relative p-4 rounded-xl border-2 border-gray-200 hover:border-transparent hover:shadow-xl transition-all duration-200 text-left"
+              onClick={() => navigate(action.path)}
+              type="button"
             >
-              {/* Gradient Background on Hover */}
-              <div className={`absolute inset-0 bg-gradient-to-br ${action.color} opacity-0 group-hover:opacity-100 rounded-xl transition-opacity duration-200`}></div>
-              
-              {/* Content */}
-              <div className="relative">
-                <div className={`h-10 w-10 rounded-lg bg-gradient-to-br ${action.color} flex items-center justify-center mb-3 shadow-lg group-hover:shadow-xl transition-shadow`}>
-                  <Icon className="h-5 w-5 text-white" />
-                </div>
-                <h4 className="font-semibold text-gray-900 group-hover:text-white transition-colors text-sm">
-                  {action.title}
-                </h4>
-                <p className="text-xs text-gray-600 group-hover:text-white/80 transition-colors mt-1">
-                  {action.description}
-                </p>
+              <div className="action-tile__icon">
+                <Icon size={18} />
+              </div>
+
+              <div className="action-tile__copy">
+                <span className="action-tile__title">{action.title}</span>
+                <span className="action-tile__description">{action.description}</span>
               </div>
             </button>
           );
         })}
       </div>
-    </div>
+    </article>
   );
 };
 

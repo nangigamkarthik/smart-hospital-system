@@ -1,106 +1,267 @@
-import React from 'react';
-import { useNavigate } from 'react-router-dom';
-import { LogOut, User, Settings, ChevronDown } from 'lucide-react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import {
+  Activity,
+  Bell,
+  CalendarDays,
+  Clock3,
+  LogOut,
+  Menu,
+  Settings,
+  ShieldCheck,
+  User,
+} from 'lucide-react';
+import toast from 'react-hot-toast';
 import { useAuth } from '../../services/AuthContext';
-import NotificationCenter from '../notifications/NotificationCenter';
+import { getPortalLabelForRole } from '../../utils/permissions';
 
-const Navbar = () => {
+const routeMeta = {
+  '/': {
+    byRole: {
+      Admin: {
+        section: 'Admin Command',
+        title: 'Hospital Command Center',
+        description: 'Oversee hospital performance, users, reporting, and system-wide activity from one place.',
+      },
+      Doctor: {
+        section: 'Doctor Workspace',
+        title: 'Clinical Care Overview',
+        description: 'Review patient flow, appointments, records, and decision-support tools for active care.',
+      },
+      default: {
+        section: 'Staff Operations',
+        title: 'Daily Front Desk Overview',
+        description: 'Keep appointments, patient movement, and department coordination moving smoothly.',
+      },
+    },
+  },
+  '/patients': {
+    section: 'Patient Care',
+    title: 'Patient Directory',
+    description: 'Review records, status changes, and intake details without losing context.',
+  },
+  '/doctors': {
+    section: 'Clinical Team',
+    title: 'Doctor Roster',
+    description: 'Keep specialist availability, assignments, and staffing visibility up to date.',
+  },
+  '/appointments': {
+    section: 'Scheduling',
+    title: 'Appointment Operations',
+    description: 'Manage bookings, no-show risk, and queue pressure across departments.',
+  },
+  '/departments': {
+    section: 'Capacity',
+    title: 'Department Performance',
+    description: 'Monitor throughput, occupancy, and service bottlenecks department by department.',
+  },
+  '/records': {
+    section: 'Medical History',
+    title: 'Clinical Records',
+    description: 'Access care history, documentation quality, and patient summaries quickly.',
+  },
+  '/analytics': {
+    section: 'Insights',
+    title: 'Advanced Analytics',
+    description: 'See the trends behind patient demand, treatment outcomes, and operations.',
+  },
+  '/ml-predictions': {
+    section: 'Intelligence',
+    title: 'Predictive Monitoring',
+    description: 'Use smart forecasts to anticipate risk, capacity issues, and demand spikes.',
+  },
+  '/medicines': {
+    section: 'Pharmacy Support',
+    title: 'Medicine Intelligence',
+    description: 'Search a medicine by name or label image and review official use, safety, and age guidance.',
+  },
+  '/reports': {
+    section: 'Reporting',
+    title: 'Executive Reports',
+    description: 'Export polished reports for leadership, audits, and daily standups.',
+  },
+  '/users': {
+    section: 'Administration',
+    title: 'User Management',
+    description: 'Control access, permissions, and role-based workflows with less friction.',
+  },
+  '/settings': {
+    section: 'Configuration',
+    title: 'System Settings',
+    description: 'Tune preferences, policies, and defaults for a smoother hospital workflow.',
+  },
+};
+
+const Navbar = ({ onMenuToggle }) => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user, logout } = useAuth();
-  const [showUserMenu, setShowUserMenu] = React.useState(false);
+  const [showUserMenu, setShowUserMenu] = useState(false);
+  const menuRef = useRef(null);
+
+  useEffect(() => {
+    const handlePointerDown = (event) => {
+      if (menuRef.current && !menuRef.current.contains(event.target)) {
+        setShowUserMenu(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handlePointerDown);
+    return () => {
+      document.removeEventListener('mousedown', handlePointerDown);
+    };
+  }, []);
 
   const handleLogout = () => {
+    setShowUserMenu(false);
     logout();
     navigate('/login');
   };
 
+  const handleNotificationsClick = () => {
+    toast.success(`No new ${getPortalLabelForRole(user?.role).toLowerCase()} alerts right now.`);
+  };
+
+  const meta = useMemo(() => {
+    const currentMeta = routeMeta[location.pathname] || routeMeta['/'];
+    if (currentMeta.byRole) {
+      return currentMeta.byRole[user?.role] || currentMeta.byRole.default;
+    }
+    return currentMeta;
+  }, [location.pathname, user?.role]);
+
+  const formattedDate = useMemo(() => (
+    new Date().toLocaleDateString('en-US', {
+      weekday: 'short',
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    })
+  ), []);
+
+  const formattedTime = useMemo(() => (
+    new Date().toLocaleTimeString('en-US', {
+      hour: 'numeric',
+      minute: '2-digit',
+    })
+  ), []);
+
   return (
-    <nav className="bg-white shadow-md border-b border-gray-200">
-      <div className="px-6 py-4">
-        <div className="flex items-center justify-between">
-          {/* Left - Page Title */}
-          <div>
-            <h2 className="text-2xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
-              Hospital Management System
-            </h2>
-            <p className="text-sm text-gray-600 mt-1">
-              {new Date().toLocaleDateString('en-US', { 
-                weekday: 'long', 
-                year: 'numeric', 
-                month: 'long', 
-                day: 'numeric' 
-              })}
-            </p>
-          </div>
+    <header className="shell-topbar">
+      <div className="shell-topbar__intro">
+        <button
+          className="icon-button shell-mobile-toggle"
+          onClick={onMenuToggle}
+          type="button"
+          aria-label="Toggle navigation"
+        >
+          <Menu size={18} />
+        </button>
 
-          {/* Right - Actions */}
-          <div className="flex items-center space-x-4">
-            {/* Notification Center */}
-            <NotificationCenter />
-
-            {/* Quick Settings */}
-            <button 
-              onClick={() => navigate('/settings')}
-              className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
-              title="Settings"
-            >
-              <Settings className="h-6 w-6 text-gray-700" />
-            </button>
-
-            {/* User Menu */}
-            <div className="relative">
-              <button
-                onClick={() => setShowUserMenu(!showUserMenu)}
-                className="flex items-center space-x-3 px-4 py-2 rounded-lg hover:bg-gray-100 transition-colors"
-              >
-                <div className="h-10 w-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold shadow-lg">
-                  {user?.username?.charAt(0).toUpperCase() || 'U'}
-                </div>
-                <div className="text-left hidden md:block">
-                  <p className="text-sm font-semibold text-gray-900">{user?.username || 'User'}</p>
-                  <p className="text-xs text-gray-600">{user?.role || 'Admin'}</p>
-                </div>
-                <ChevronDown className={`h-4 w-4 text-gray-600 transition-transform ${showUserMenu ? 'rotate-180' : ''}`} />
-              </button>
-
-              {/* Dropdown Menu */}
-              {showUserMenu && (
-                <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-xl border border-gray-200 py-2 z-50">
-                  <button
-                    onClick={() => {
-                      navigate('/settings');
-                      setShowUserMenu(false);
-                    }}
-                    className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center space-x-2"
-                  >
-                    <User className="h-4 w-4" />
-                    <span>Profile</span>
-                  </button>
-                  <button
-                    onClick={() => {
-                      navigate('/settings');
-                      setShowUserMenu(false);
-                    }}
-                    className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center space-x-2"
-                  >
-                    <Settings className="h-4 w-4" />
-                    <span>Settings</span>
-                  </button>
-                  <div className="border-t border-gray-200 my-2"></div>
-                  <button
-                    onClick={handleLogout}
-                    className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center space-x-2"
-                  >
-                    <LogOut className="h-4 w-4" />
-                    <span>Logout</span>
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
+        <div>
+          <div className="shell-topbar__eyebrow">{meta.section}</div>
+          <h1 className="shell-topbar__title">{meta.title}</h1>
+          <p className="shell-topbar__subtitle">{meta.description}</p>
         </div>
       </div>
-    </nav>
+
+      <div className="shell-topbar__actions">
+        <div className="shell-chip shell-chip--status">
+          <ShieldCheck size={15} />
+          <span>System healthy</span>
+        </div>
+
+        <div className="shell-chip shell-chip--soft">
+          <CalendarDays size={15} />
+          <span>{formattedDate}</span>
+        </div>
+
+        <div className="shell-chip shell-chip--soft hide-on-tablet">
+          <Clock3 size={15} />
+          <span>{formattedTime}</span>
+        </div>
+
+        <button
+          className="icon-button"
+          onClick={handleNotificationsClick}
+          title="Notifications"
+          type="button"
+        >
+          <Bell size={18} />
+          <span className="icon-button__dot" />
+        </button>
+
+        <button
+          className="icon-button hide-on-tablet"
+          onClick={() => navigate('/settings')}
+          title="Settings"
+          type="button"
+        >
+          <Settings size={18} />
+        </button>
+
+        <div className="user-menu" ref={menuRef}>
+          <button
+            className="user-menu__trigger"
+            onClick={() => setShowUserMenu((open) => !open)}
+            type="button"
+          >
+            <div className="user-menu__avatar">
+              {user?.username?.charAt(0).toUpperCase() || 'U'}
+            </div>
+
+            <div className="user-menu__meta">
+              <span className="user-menu__name">{user?.username || 'User'}</span>
+              <span className="user-menu__role">
+                {user?.role ? `${user.role} - ${getPortalLabelForRole(user.role)}` : 'Administrator'}
+              </span>
+            </div>
+
+            <div className="user-menu__health hide-on-tablet">
+              <Activity size={15} />
+              <span>On shift</span>
+            </div>
+          </button>
+
+          {showUserMenu && (
+            <div className="user-menu__dropdown">
+              <button
+                className="user-menu__item"
+                onClick={() => {
+                  setShowUserMenu(false);
+                  navigate('/settings');
+                }}
+                type="button"
+              >
+                <User size={16} />
+                <span>Profile & preferences</span>
+              </button>
+
+              <button
+                className="user-menu__item"
+                onClick={() => {
+                  setShowUserMenu(false);
+                  navigate('/settings');
+                }}
+                type="button"
+              >
+                <Settings size={16} />
+                <span>System settings</span>
+              </button>
+
+              <button
+                className="user-menu__item user-menu__item--danger"
+                onClick={handleLogout}
+                type="button"
+              >
+                <LogOut size={16} />
+                <span>Log out</span>
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    </header>
   );
 };
 

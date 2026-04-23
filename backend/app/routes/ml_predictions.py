@@ -3,8 +3,8 @@ ML Predictions Routes - Complete Implementation
 """
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required
-import random
 from datetime import datetime, timedelta
+import re
 
 ml_bp = Blueprint('ml', __name__)
 
@@ -78,6 +78,39 @@ DISEASE_DATABASE = {
     }
 }
 
+
+def _normalize_symptom_text(symptoms):
+    return re.sub(r'\s+', ' ', (symptoms or '').strip().lower())
+
+
+def _extract_symptom_phrases(symptoms):
+    normalized = _normalize_symptom_text(symptoms)
+    raw_parts = re.split(r'[,;/\n]+', normalized)
+    phrases = [part.strip() for part in raw_parts if part.strip()]
+    return phrases, normalized
+
+
+def _calculate_disease_match_score(input_text, symptom_pattern):
+    expected_symptoms = [part.strip().lower() for part in symptom_pattern.split(',') if part.strip()]
+    if not expected_symptoms:
+        return 0
+
+    input_phrases, normalized_input = _extract_symptom_phrases(input_text)
+    input_tokens = set(re.findall(r'[a-z]+', normalized_input))
+
+    score = 0
+    for symptom in expected_symptoms:
+        symptom_tokens = set(re.findall(r'[a-z]+', symptom))
+        phrase_matched = symptom in normalized_input or symptom in input_phrases
+        token_overlap = len(symptom_tokens.intersection(input_tokens)) / max(len(symptom_tokens), 1)
+
+        if phrase_matched:
+            score += 1
+        elif token_overlap >= 0.6:
+            score += token_overlap
+
+    return round(score / len(expected_symptoms), 2)
+
 @ml_bp.route('/predict-disease', methods=['POST'])
 @jwt_required()
 def predict_disease():
@@ -95,13 +128,8 @@ def predict_disease():
         best_score = 0
         
         for symptom_pattern, disease_info in DISEASE_DATABASE.items():
-            symptom_words = set(symptom_pattern.split(', '))
-            input_words = set(symptoms.split())
-            
-            # Calculate match score
-            common_words = symptom_words.intersection(input_words)
-            score = len(common_words) / len(symptom_words)
-            
+            score = _calculate_disease_match_score(symptoms, symptom_pattern)
+
             if score > best_score:
                 best_score = score
                 best_match = disease_info

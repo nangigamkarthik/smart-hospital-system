@@ -1,92 +1,143 @@
-import React from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import React, { useMemo } from 'react';
+import { NavLink } from 'react-router-dom';
 import {
-  LayoutDashboard,
-  Users,
-  UserCog,
-  Calendar,
-  Building2,
-  FileText,
+  Activity,
   BarChart3,
   Brain,
-  Settings,
+  Building2,
+  Calendar,
   FileSpreadsheet,
-  Shield,
+  FileText,
+  LayoutDashboard,
+  Pill,
+  Settings,
+  Stethoscope,
+  UserCircle,
+  Users,
+  X,
 } from 'lucide-react';
+import { useAuth } from '../../services/AuthContext';
+import { canAccessRoute, getPortalLabelForRole } from '../../utils/permissions';
 
-const Sidebar = () => {
-  const location = useLocation();
-  
-  const menuItems = [
-    { path: '/', name: 'Dashboard', icon: LayoutDashboard },
-    { path: '/patients', name: 'Patients', icon: Users },
-    { path: '/doctors', name: 'Doctors', icon: UserCog },
-    { path: '/appointments', name: 'Appointments', icon: Calendar },
-    { path: '/departments', name: 'Departments', icon: Building2 },
-    { path: '/records', name: 'Medical Records', icon: FileText },
-    { path: '/analytics', name: 'Analytics', icon: BarChart3 },
-    { path: '/ml-predictions', name: 'ML Predictions', icon: Brain },
-    { path: '/reports', name: 'Reports', icon: FileSpreadsheet },
-    { path: '/users', name: 'Users', icon: Shield },
-    { path: '/settings', name: 'Settings', icon: Settings },
-  ];
+const menuSections = [
+  {
+    title: 'Overview',
+    items: [
+      { path: '/', icon: LayoutDashboard, label: 'Dashboard', hint: 'Live hospital pulse' },
+    ],
+  },
+  {
+    title: 'Care Delivery',
+    items: [
+      { path: '/patients', icon: Users, label: 'Patients', hint: 'Profiles and intake' },
+      { path: '/doctors', icon: Stethoscope, label: 'Doctors', hint: 'Roster and expertise' },
+      { path: '/appointments', icon: Calendar, label: 'Appointments', hint: 'Bookings and queues' },
+      { path: '/departments', icon: Building2, label: 'Departments', hint: 'Units and occupancy' },
+      { path: '/records', icon: FileText, label: 'Medical records', hint: 'Clinical notes and history' },
+    ],
+  },
+  {
+    title: 'Operations',
+    items: [
+      { path: '/analytics', icon: BarChart3, label: 'Analytics', hint: 'Performance trends' },
+      { path: '/ml-predictions', icon: Brain, label: 'ML predictions', hint: 'Risk and demand signals' },
+      { path: '/medicines', icon: Pill, label: 'Medicines', hint: 'Name or image lookup' },
+      { path: '/reports', icon: FileSpreadsheet, label: 'Reports', hint: 'Exports and briefings' },
+    ],
+  },
+  {
+    title: 'System',
+    items: [
+      { path: '/users', icon: UserCircle, label: 'Users', hint: 'Access and roles' },
+      { path: '/settings', icon: Settings, label: 'Settings', hint: 'Preferences and rules' },
+    ],
+  },
+];
 
-  const isActive = (path) => {
-    return location.pathname === path;
-  };
+const Sidebar = ({ isOpen, onClose }) => {
+  const { user } = useAuth();
+
+  const visibleSections = useMemo(() => (
+    menuSections
+      .map((section) => ({
+        ...section,
+        items: section.items.filter((item) => canAccessRoute(user?.role, item.path)),
+      }))
+      .filter((section) => section.items.length > 0)
+  ), [user?.role]);
 
   return (
-    <div className="w-64 bg-white shadow-lg h-full flex flex-col">
-      {/* Logo */}
-      <div className="p-6 bg-gradient-to-r from-indigo-600 to-purple-600">
-        <h1 className="text-2xl font-bold text-white flex items-center">
-          <div className="h-10 w-10 bg-white rounded-lg flex items-center justify-center mr-3">
-            <span className="text-2xl">🏥</span>
+    <aside className={`app-sidebar ${isOpen ? 'is-open' : ''}`}>
+      <div className="app-sidebar__header">
+        <div className="app-sidebar__brand">
+          <div className="app-sidebar__brand-mark">
+            <Building2 size={22} />
           </div>
-          SmartCare
-        </h1>
-        <p className="text-indigo-100 text-sm mt-1">Hospital Management</p>
-      </div>
 
-      {/* Navigation */}
-      <nav className="flex-1 overflow-y-auto p-4">
-        <ul className="space-y-2">
-          {menuItems.map((item) => {
-            const Icon = item.icon;
-            const active = isActive(item.path);
-            
-            return (
-              <li key={item.path}>
-                <Link
-                  to={item.path}
-                  className={`sidebar-link ${active ? 'active' : ''}`}
-                >
-                  <Icon className="h-5 w-5" />
-                  <span className="font-medium">{item.name}</span>
-                </Link>
-              </li>
-            );
-          })}
-        </ul>
-      </nav>
-
-      {/* Footer */}
-      <div className="p-4 border-t border-gray-200 bg-gradient-to-r from-gray-50 to-blue-50">
-        <div className="bg-white rounded-lg p-3 shadow-sm">
-          <p className="text-xs text-gray-600 font-semibold">Quick Stats</p>
-          <div className="mt-2 space-y-1">
-            <div className="flex justify-between text-xs">
-              <span className="text-gray-600">Patients Today</span>
-              <span className="font-bold text-indigo-600">24</span>
-            </div>
-            <div className="flex justify-between text-xs">
-              <span className="text-gray-600">Appointments</span>
-              <span className="font-bold text-purple-600">18</span>
+          <div>
+            <div className="app-sidebar__brand-title">Smart Hospital</div>
+            <div className="app-sidebar__brand-subtitle">
+              {user?.role ? getPortalLabelForRole(user.role) : 'Clinical operations system'}
             </div>
           </div>
         </div>
+
+        <button
+          className="icon-button app-sidebar__close"
+          onClick={onClose}
+          type="button"
+          aria-label="Close navigation"
+        >
+          <X size={16} />
+        </button>
       </div>
-    </div>
+
+      <div className="app-sidebar__status-card">
+        <div className="app-sidebar__status-label">Live operations</div>
+        <div className="app-sidebar__status-value">87% bed efficiency</div>
+        <p className="app-sidebar__status-copy">
+          Emergency flow is stable and appointment demand is peaking after noon.
+        </p>
+
+        <div className="app-sidebar__status-pills">
+          <span className="shell-chip shell-chip--status">
+            <Activity size={14} />
+            <span>Realtime sync</span>
+          </span>
+          <span className="shell-chip shell-chip--soft">6 departments active</span>
+        </div>
+      </div>
+
+      <nav className="app-sidebar__nav">
+        {visibleSections.map((section) => (
+          <div className="app-sidebar__section" key={section.title}>
+            <div className="app-sidebar__section-title">{section.title}</div>
+
+            {section.items.map((item) => {
+              const Icon = item.icon;
+
+              return (
+                <NavLink
+                  key={item.path}
+                  to={item.path}
+                  end={item.path === '/'}
+                  className={({ isActive }) => `app-sidebar__link ${isActive ? 'is-active' : ''}`}
+                >
+                  <div className="app-sidebar__link-icon">
+                    <Icon size={18} />
+                  </div>
+
+                  <div className="app-sidebar__link-copy">
+                    <span className="app-sidebar__link-label">{item.label}</span>
+                    <span className="app-sidebar__link-hint">{item.hint}</span>
+                  </div>
+                </NavLink>
+              );
+            })}
+          </div>
+        ))}
+      </nav>
+    </aside>
   );
 };
 

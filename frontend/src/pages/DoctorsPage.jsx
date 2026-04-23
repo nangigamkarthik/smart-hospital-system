@@ -5,6 +5,12 @@ import Loading from '../components/common/Loading';
 import AddDoctorModal from '../components/doctors/AddDoctorModal';
 import toast from 'react-hot-toast';
 
+const statusColors = {
+  Active:    { bg: '#d1fae5', color: '#065f46' },
+  'On Leave':{ bg: '#fef3c7', color: '#92400e' },
+  Inactive:  { bg: '#f3f4f6', color: '#374151' },
+};
+
 const DoctorsPage = () => {
   const [doctors, setDoctors] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -12,168 +18,64 @@ const DoctorsPage = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [filterStatus, setFilterStatus] = useState('');
-  const [filterSpecialization, setFilterSpecialization] = useState('');
+  const [filterSpec, setFilterSpec] = useState('');
   const [specializations, setSpecializations] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingDoctor, setEditingDoctor] = useState(null);
 
-  useEffect(() => {
-    fetchDoctors();
-    fetchSpecializations();
-  }, [currentPage, search, filterStatus, filterSpecialization]);
+  useEffect(() => { fetchDoctors(); fetchSpecializations(); }, [currentPage, search, filterStatus, filterSpec]);
 
   const fetchDoctors = async () => {
     try {
       setLoading(true);
-      const response = await doctorAPI.getAll({
-        page: currentPage,
-        per_page: 10,
-        specialization: filterSpecialization,
-        status: filterStatus,
-      });
-      
-      setDoctors(response.data.doctors);
-      setTotalPages(response.data.pages);
-    } catch (error) {
-      console.error('Error fetching doctors:', error);
-      toast.error('Failed to load doctors');
-    } finally {
-      setLoading(false);
-    }
+      const res = await doctorAPI.getAll({ page: currentPage, per_page: 10, specialization: filterSpec, status: filterStatus });
+      setDoctors(res.data.doctors);
+      setTotalPages(res.data.pages);
+    } catch { toast.error('Failed to load doctors'); }
+    finally { setLoading(false); }
   };
 
   const fetchSpecializations = async () => {
     try {
-      const response = await doctorAPI.getSpecializations();
-      setSpecializations(response.data.specializations);
-    } catch (error) {
-      console.error('Error fetching specializations:', error);
-    }
+      const res = await doctorAPI.getSpecializations();
+      setSpecializations(res.data.specializations);
+    } catch {}
   };
 
-  const handleAddDoctor = async (doctorData) => {
-    await doctorAPI.create(doctorData);
-    fetchDoctors();
+  const handleDelete = async (id) => {
+    if (!window.confirm('Delete this doctor?')) return;
+    try { await doctorAPI.delete(id); toast.success('Deleted'); fetchDoctors(); }
+    catch { toast.error('Failed to delete'); }
   };
 
-  const handleEditDoctor = async (doctorData) => {
-    await doctorAPI.update(editingDoctor.id, doctorData);
-    fetchDoctors();
-  };
-
-  const handleDeleteDoctor = async (id) => {
-    if (!window.confirm('Are you sure you want to delete this doctor?')) {
-      return;
-    }
-
-    try {
-      await doctorAPI.delete(id);
-      toast.success('Doctor deleted successfully');
-      fetchDoctors();
-    } catch (error) {
-      console.error('Error deleting doctor:', error);
-      toast.error('Failed to delete doctor');
-    }
-  };
-
-  const openAddModal = () => {
-    setEditingDoctor(null);
-    setIsModalOpen(true);
-  };
-
-  const openEditModal = (doctor) => {
-    setEditingDoctor(doctor);
-    setIsModalOpen(true);
-  };
-
-  const closeModal = () => {
-    setIsModalOpen(false);
-    setEditingDoctor(null);
-  };
-
-  const getStatusBadge = (status) => {
-    const styles = {
-      Active: 'bg-green-100 text-green-800',
-      'On Leave': 'bg-yellow-100 text-yellow-800',
-      Inactive: 'bg-gray-100 text-gray-800',
-    };
-    
-    return (
-      <span className={`px-2 py-1 text-xs font-semibold rounded-full ${styles[status]}`}>
-        {status}
-      </span>
-    );
-  };
-
-  const renderRating = (rating) => {
-    return (
-      <div className="flex items-center space-x-1">
-        <Star className="h-4 w-4 text-yellow-400 fill-current" />
-        <span className="text-sm font-medium text-gray-700">{rating?.toFixed(1) || 'N/A'}</span>
-      </div>
-    );
-  };
-
-  if (loading && doctors.length === 0) {
-    return <Loading fullScreen />;
-  }
+  if (loading && doctors.length === 0) return <Loading fullScreen />;
 
   return (
-    <div className="p-6 space-y-6">
+    <div style={s.page}>
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div style={s.header}>
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Doctors</h1>
-          <p className="text-gray-600 mt-1">Manage doctor profiles and schedules</p>
+          <h1 style={s.h1}>Doctors</h1>
+          <p style={s.sub}>Manage doctor profiles and schedules</p>
         </div>
-        <button onClick={openAddModal} className="btn-primary flex items-center space-x-2">
-          <Plus className="h-5 w-5" />
-          <span>Add Doctor</span>
+        <button style={s.btnPrimary} onClick={() => { setEditingDoctor(null); setIsModalOpen(true); }}>
+          <Plus size={18} /> Add Doctor
         </button>
       </div>
 
       {/* Filters */}
-      <div className="card">
-        <div className="flex flex-col md:flex-row gap-4">
-          {/* Search */}
-          <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Search doctors..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="input-field pl-10"
-            />
+      <div style={s.card}>
+        <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+          <div style={{ flex: 1, minWidth: 200, position: 'relative' }}>
+            <Search size={16} color="#9ca3af" style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)' }} />
+            <input type="text" placeholder="Search doctors..." value={search}
+              onChange={e => setSearch(e.target.value)} style={{ ...s.input, paddingLeft: '2.5rem' }} />
           </div>
-
-          {/* Specialization Filter */}
-          <div className="flex items-center space-x-2">
-            <Filter className="h-5 w-5 text-gray-400" />
-            <select
-              value={filterSpecialization}
-              onChange={(e) => {
-                setFilterSpecialization(e.target.value);
-                setCurrentPage(1);
-              }}
-              className="input-field"
-            >
-              <option value="">All Specializations</option>
-              {specializations.map((spec) => (
-                <option key={spec} value={spec}>{spec}</option>
-              ))}
-            </select>
-          </div>
-
-          {/* Status Filter */}
-          <select
-            value={filterStatus}
-            onChange={(e) => {
-              setFilterStatus(e.target.value);
-              setCurrentPage(1);
-            }}
-            className="input-field"
-          >
+          <select value={filterSpec} onChange={e => { setFilterSpec(e.target.value); setCurrentPage(1); }} style={s.input}>
+            <option value="">All Specializations</option>
+            {specializations.map(sp => <option key={sp} value={sp}>{sp}</option>)}
+          </select>
+          <select value={filterStatus} onChange={e => { setFilterStatus(e.target.value); setCurrentPage(1); }} style={s.input}>
             <option value="">All Status</option>
             <option value="Active">Active</option>
             <option value="On Leave">On Leave</option>
@@ -182,110 +84,97 @@ const DoctorsPage = () => {
         </div>
       </div>
 
-      {/* Doctors Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {doctors.map((doctor) => (
-          <div key={doctor.id} className="card hover:shadow-lg transition-shadow">
-            <div className="flex items-start justify-between mb-4">
-              <div className="flex items-center space-x-3">
-                <div className="h-12 w-12 bg-primary-600 rounded-full flex items-center justify-center text-white font-bold text-lg">
-                  {doctor.first_name[0]}{doctor.last_name[0]}
+      {/* Grid */}
+      <div style={s.grid}>
+        {doctors.map(doc => {
+          const sc = statusColors[doc.status] || statusColors.Inactive;
+          return (
+            <div key={doc.id} style={s.docCard}
+              onMouseOver={e => { e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.boxShadow = '0 12px 30px rgba(0,0,0,0.12)'; }}
+              onMouseOut={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 4px 20px rgba(0,0,0,0.07)'; }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                  <div style={s.avatar}>
+                    {doc.first_name?.[0]}{doc.last_name?.[0]}
+                  </div>
+                  <div>
+                    <h3 style={{ fontSize: '1rem', fontWeight: 700, color: '#111827', margin: 0 }}>{doc.full_name}</h3>
+                    <p style={{ fontSize: '0.8rem', color: '#6b7280', margin: '2px 0 0' }}>{doc.specialization}</p>
+                  </div>
                 </div>
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900">
-                    {doctor.full_name}
-                  </h3>
-                  <p className="text-sm text-gray-600">{doctor.specialization}</p>
+                <span style={{ ...s.badge, background: sc.bg, color: sc.color }}>{doc.status}</span>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '1rem' }}>
+                {[
+                  ['Experience', `${doc.experience_years} years`],
+                  ['Consultation Fee', `₹${doc.consultation_fee}`],
+                  ['Patients Treated', doc.total_patients_treated],
+                ].map(([label, val]) => (
+                  <div key={label} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
+                    <span style={{ color: '#6b7280' }}>{label}</span>
+                    <span style={{ fontWeight: 600, color: '#111827' }}>{val}</span>
+                  </div>
+                ))}
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
+                  <span style={{ color: '#6b7280' }}>Rating</span>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontWeight: 600, color: '#111827' }}>
+                    <Star size={14} color="#f59e0b" fill="#f59e0b" />
+                    {doc.rating?.toFixed(1) || 'N/A'}
+                  </span>
                 </div>
               </div>
-              {getStatusBadge(doctor.status)}
-            </div>
 
-            <div className="space-y-2 mb-4">
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-gray-600">Experience:</span>
-                <span className="font-medium">{doctor.experience_years} years</span>
-              </div>
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-gray-600">Consultation Fee:</span>
-                <span className="font-medium">₹{doctor.consultation_fee}</span>
-              </div>
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-gray-600">Patients Treated:</span>
-                <span className="font-medium">{doctor.total_patients_treated}</span>
-              </div>
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-gray-600">Rating:</span>
-                {renderRating(doctor.rating)}
+              <div style={{ borderTop: '1px solid #f3f4f6', paddingTop: '0.875rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: '0.75rem', color: '#9ca3af' }}>{doc.phone}</span>
+                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                  <button style={s.actionIcon} onClick={() => { setEditingDoctor(doc); setIsModalOpen(true); }}><Edit size={16} color="#10b981" /></button>
+                  <button style={s.actionIcon} onClick={() => handleDelete(doc.id)}><Trash2 size={16} color="#ef4444" /></button>
+                </div>
               </div>
             </div>
-
-            <div className="pt-4 border-t border-gray-200 flex items-center justify-between">
-              <div className="text-xs text-gray-500">
-                {doctor.phone}
-              </div>
-              <div className="flex space-x-2">
-                <button
-                  onClick={() => openEditModal(doctor)}
-                  className="text-primary-600 hover:text-primary-900 p-1"
-                  title="Edit Doctor"
-                >
-                  <Edit className="h-4 w-4" />
-                </button>
-                <button
-                  onClick={() => handleDeleteDoctor(doctor.id)}
-                  className="text-red-600 hover:text-red-900 p-1"
-                  title="Delete"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </button>
-              </div>
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
-      {/* Pagination */}
       {totalPages > 1 && (
-        <div className="card flex items-center justify-between">
-          <div className="text-sm text-gray-700">
-            Page <span className="font-medium">{currentPage}</span> of{' '}
-            <span className="font-medium">{totalPages}</span>
-          </div>
-          <div className="flex space-x-2">
-            <button
-              onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-              disabled={currentPage === 1}
-              className="btn-secondary disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              Previous
-            </button>
-            <button
-              onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
-              disabled={currentPage === totalPages}
-              className="btn-secondary disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              Next
-            </button>
+        <div style={{ ...s.card, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span style={{ fontSize: '0.875rem', color: '#6b7280' }}>Page <b>{currentPage}</b> of <b>{totalPages}</b></span>
+          <div style={{ display: 'flex', gap: '0.5rem' }}>
+            <button style={s.btnSecondary} disabled={currentPage === 1} onClick={() => setCurrentPage(p => p - 1)}>Previous</button>
+            <button style={s.btnSecondary} disabled={currentPage === totalPages} onClick={() => setCurrentPage(p => p + 1)}>Next</button>
           </div>
         </div>
       )}
 
       {doctors.length === 0 && !loading && (
-        <div className="card text-center py-12">
-          <p className="text-gray-500">No doctors found</p>
+        <div style={{ ...s.card, textAlign: 'center', padding: '3rem' }}>
+          <p style={{ color: '#9ca3af' }}>No doctors found</p>
         </div>
       )}
 
-      {/* Add/Edit Doctor Modal */}
-      <AddDoctorModal
-        isOpen={isModalOpen}
-        onClose={closeModal}
-        onSuccess={editingDoctor ? handleEditDoctor : handleAddDoctor}
-        editDoctor={editingDoctor}
-      />
+      <AddDoctorModal isOpen={isModalOpen} onClose={() => { setIsModalOpen(false); setEditingDoctor(null); }}
+        onSuccess={editingDoctor ? async d => { await doctorAPI.update(editingDoctor.id, d); fetchDoctors(); } : async d => { await doctorAPI.create(d); fetchDoctors(); }}
+        editDoctor={editingDoctor} />
     </div>
   );
+};
+
+const s = {
+  page: { padding: '1.75rem', display: 'flex', flexDirection: 'column', gap: '1.5rem', minHeight: '100%' },
+  header: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' },
+  h1: { fontSize: '1.875rem', fontWeight: 800, color: '#111827', margin: 0 },
+  sub: { fontSize: '0.875rem', color: '#6b7280', marginTop: 4 },
+  card: { background: 'white', borderRadius: '1rem', padding: '1.5rem', boxShadow: '0 4px 20px rgba(0,0,0,0.07)', border: '1px solid #e5e7eb' },
+  grid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.25rem' },
+  docCard: { background: 'white', borderRadius: '1rem', padding: '1.5rem', boxShadow: '0 4px 20px rgba(0,0,0,0.07)', border: '1px solid #e5e7eb', transition: 'all 0.25s ease' },
+  avatar: { width: 46, height: 46, borderRadius: '0.75rem', background: 'linear-gradient(135deg, #14b8a6 0%, #06b6d4 100%)', color: 'white', fontWeight: 800, fontSize: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center' },
+  badge: { display: 'inline-flex', padding: '0.25rem 0.75rem', borderRadius: '9999px', fontSize: '0.72rem', fontWeight: 700, whiteSpace: 'nowrap' },
+  btnPrimary: { display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.75rem 1.5rem', background: 'linear-gradient(135deg, #14b8a6 0%, #06b6d4 100%)', color: 'white', fontWeight: 700, fontSize: '0.875rem', borderRadius: '0.75rem', border: 'none', cursor: 'pointer', boxShadow: '0 4px 12px rgba(20,184,166,0.35)' },
+  btnSecondary: { padding: '0.5rem 1rem', background: 'white', color: '#374151', fontWeight: 600, fontSize: '0.875rem', borderRadius: '0.625rem', border: '1.5px solid #e5e7eb', cursor: 'pointer' },
+  input: { padding: '0.75rem 1rem', border: '1.5px solid #e5e7eb', borderRadius: '0.625rem', fontSize: '0.875rem', outline: 'none', background: 'white', color: '#111827' },
+  actionIcon: { background: 'none', border: 'none', cursor: 'pointer', padding: '0.3rem', borderRadius: '0.375rem' },
 };
 
 export default DoctorsPage;

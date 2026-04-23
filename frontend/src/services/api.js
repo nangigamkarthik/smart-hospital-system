@@ -106,11 +106,16 @@ export const medicalRecordsAPI = {
 
 // ML Prediction APIs
 export const mlAPI = {
-  predictDisease: (symptoms) => api.post('/ml/predict/disease', symptoms),
-  predictReadmission: (data) => api.post('/ml/predict/readmission', data),
-  predictNoShow: (data) => api.post('/ml/predict/no-show', data),
-  predictLengthOfStay: (data) => api.post('/ml/predict/length-of-stay', data),
-  recommendTreatment: (data) => api.post('/ml/recommend/treatment', data),
+  predictDisease: (symptoms) => api.post('/ml/predict-disease', symptoms),
+  predictReadmission: (data) => api.post('/ml/predict-readmission', data),
+  predictNoShow: (data) => api.post('/ml/predict-noshow', data),
+  predictLengthOfStay: (data) => api.post('/ml/predict-length', data),
+  recommendTreatment: (data) => api.post('/ml/recommend-treatment', data),
+};
+
+// Medicine Intelligence APIs
+export const medicineAPI = {
+  lookup: (data) => api.post('/medicines/lookup', data),
 };
 
 export default api;

@@ -24,6 +24,7 @@ def create_app(config_class=Config):
     from app.routes.departments import departments_bp
     from app.routes.medical_records import medical_records_bp
     from app.routes.ml_predictions import ml_bp
+    from app.routes.medicines import medicines_bp
 
     # Register blueprints
     app.register_blueprint(auth_bp, url_prefix='/api/auth')
@@ -35,6 +36,7 @@ def create_app(config_class=Config):
     app.register_blueprint(departments_bp, url_prefix='/api/departments')
     app.register_blueprint(medical_records_bp, url_prefix='/api/medical-records')
     app.register_blueprint(ml_bp, url_prefix='/api/ml')
+    app.register_blueprint(medicines_bp, url_prefix='/api/medicines')
 
     @app.route('/')
     def home():
